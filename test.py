@@ -32,12 +32,12 @@ def main():
     (options, args) = parser.parse_args()
     all_participants = []
     for i in range(0, 12):
-        try:
           new_link = gen_next_link(options.url, i)
+          try:
+              page_results = parse_page(new_link)
+          except FetchParticipantException:
+              print "Something went wrong while processing page %s" % new_link
           all_participants = all_participants + parse_page(new_link)
-        except FetchParticipantException:
-            print "Something went wrong while processing page %s" % new_link
-            continue
     save_results(options.file, all_participants);
 
 def gen_next_link(url, i):
@@ -47,10 +47,17 @@ def gen_next_link(url, i):
 def parse_page(url):
     f = urllib.urlopen(url)
     if f.getcode() != 200:
+        print "bad participants page!"
         raise FetchParticipantException(url)
     soup = BeautifulSoup(f)
     links = map(lambda tag: tag.a.get("href"), soup.findAll("div", "news"));
-    participants = map(parse_participant, links)
+    participants = []
+    for link in links:
+        try:
+            parsed_p = parse_participant(link)
+            participants.append(parsed_p)
+        except FetchParticipantException:
+            continue
     soup.close()
     return participants
 
@@ -76,9 +83,10 @@ def parse_participant(url):
 def save_results(filename, participants):
     # sort results first
     p_sorted = sorted(participants, key=lambda x: x.votes, reverse=True)
-    f = open(filename, 'w')
+    f = open(filename, 'wb')
     for p in p_sorted:
-        f.write(u"%r \n" % p)
+        f.write(u"%r \r\n" % p)
+        
     f.close()
 
 if __name__ == "__main__":
