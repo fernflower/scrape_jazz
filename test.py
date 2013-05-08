@@ -1,4 +1,6 @@
+import re
 from optparse import OptionParser
+from datetime import datetime
 import codecs
 from BeautifulSoup import BeautifulSoup
 import urllib
@@ -98,7 +100,8 @@ class PageProcessor(object):
         p_sorted = sorted(participants, key=lambda x: x.votes, reverse=True)
         f = codecs.open(self.filename, 'w', encoding="utf-8")
         for p in p_sorted:
-            f.write(p.pprint() + u"\n")
+            save_format = u"%d %s \n" % (p_sorted.index(p) + 1, p.pprint())
+            f.write(save_format)
         f.close()
 
     def run(self):
@@ -107,9 +110,12 @@ class PageProcessor(object):
 
 def main():
     # parse command line options
+    p = re.compile('[:.\s]')
+    curr_datetime = str(datetime.now())
+    default_filename = "rivals_%s.txt" % p.sub('-',curr_datetime)
     parser = OptionParser()
     parser.add_option("-u", "--url")
-    parser.add_option("-f", "--file", default="rivals.out")
+    parser.add_option("-f", "--file", default=default_filename)
     (options, args) = parser.parse_args()
     processor = PageProcessor(url=options.url, filename=options.file)
     processor.run()
